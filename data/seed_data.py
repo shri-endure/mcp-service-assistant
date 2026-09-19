@@ -1,0 +1,133 @@
+"""Seed data for MCP Service Resolution Assistant."""
+
+SERVICE_CATEGORIES = [
+    "AC Repair",
+    "Laptop Repair",
+    "Plumbing",
+    "Washing Machine Repair",
+]
+
+SEED_PROVIDERS = [
+    {
+        "id": 1,
+        "name": "CoolCare Services",
+        "category": "AC Repair",
+        "rating": 4.5,
+        "location": "Goa",
+        "price_min": 500,
+        "price_max": 1000,
+        "phone": "+91 98765 43210",
+        "email": "contact@coolcare.com",
+        "description": "Expert AC repair, regular servicing, installation, and gas charging across Goa.",
+    },
+    {
+        "id": 2,
+        "name": "Goa AC Solutions",
+        "category": "AC Repair",
+        "rating": 4.3,
+        "location": "Goa",
+        "price_min": 600,
+        "price_max": 1200,
+        "phone": "+91 98765 43211",
+        "email": "support@goaacsolutions.com",
+        "description": "Fast and reliable air conditioning repair and seasonal maintenance in Goa.",
+    },
+    {
+        "id": 3,
+        "name": "TechFix Laptop Hub",
+        "category": "Laptop Repair",
+        "rating": 4.7,
+        "location": "Goa",
+        "price_min": 400,
+        "price_max": 1500,
+        "phone": "+91 98765 43212",
+        "email": "info@techfix.com",
+        "description": "Certified technicians for chip-level repair, screen replacement, and hardware diagnostics.",
+    },
+    {
+        "id": 4,
+        "name": "ByteDoctor Systems",
+        "category": "Laptop Repair",
+        "rating": 4.4,
+        "location": "Vasco, Goa",
+        "price_min": 500,
+        "price_max": 1800,
+        "phone": "+91 98765 43213",
+        "email": "help@bytedoctor.com",
+        "description": "Motherboard troubleshooting, battery replacement, keyboard fixes, and OS upgrades.",
+    },
+    {
+        "id": 5,
+        "name": "QuickPlumb Solutions",
+        "category": "Plumbing",
+        "rating": 4.6,
+        "location": "Vasco, Goa",
+        "price_min": 300,
+        "price_max": 800,
+        "phone": "+91 98765 43214",
+        "email": "service@quickplumb.com",
+        "description": "Leak detection, pipe repairs, faucet installation, and drain unclogging.",
+    },
+    {
+        "id": 6,
+        "name": "HydroCare Plumbers",
+        "category": "Plumbing",
+        "rating": 4.3,
+        "location": "Panaji, Goa",
+        "price_min": 350,
+        "price_max": 900,
+        "phone": "+91 98765 43215",
+        "email": "contact@hydrocare.com",
+        "description": "Residential and commercial plumbing maintenance and urgent repair services.",
+    },
+    {
+        "id": 7,
+        "name": "SpinDoc Appliance Repair",
+        "category": "Washing Machine Repair",
+        "rating": 4.6,
+        "location": "Vasco, Goa",
+        "price_min": 500,
+        "price_max": 1200,
+        "phone": "+91 98765 43216",
+        "email": "care@spindoc.com",
+        "description": "Specialized in front-load and top-load drum, motor, drain pump, and control board repairs.",
+    },
+    {
+        "id": 8,
+        "name": "WashPro Services",
+        "category": "Washing Machine Repair",
+        "rating": 4.5,
+        "location": "Panaji, Goa",
+        "price_min": 450,
+        "price_max": 1100,
+        "phone": "+91 98765 43217",
+        "email": "service@washpro.com",
+        "description": "Door seal replacement, vibration damping, and genuine spare parts for all major brands.",
+    },
+]
+
+STANDARD_TIME_SLOTS = [
+    "10:00",
+    "12:00",
+    "14:00",
+    "16:00",
+]
+
+FAQS = [
+    {
+        "question": "How do I schedule an appointment?",
+        "answer": "First use analyze_problem to find your category, use search_services to pick a provider, check their availability with check_availability, and then book via schedule_appointment.",
+    },
+    {
+        "question": "What is the cancellation policy?",
+        "answer": "Appointments can be cancelled anytime before the scheduled time slot using cancel_appointment.",
+    },
+    {
+        "question": "Are the listed prices final?",
+        "answer": "The price ranges reflect standard repair and inspection estimates; actual final costs depend on specific parts and labor needed.",
+    },
+    {
+        "question": "Which locations are currently supported?",
+        "answer": "Currently, providers are available across Goa.",
+    },
+]

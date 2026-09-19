@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+mcp
+python-dotenv
+google-generativeai
+httpx
+tavily-python
+groq
+websockets

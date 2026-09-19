@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MCP Service Resolution Assistant - Find, compare, and schedule home and appliance repair services using Model Context Protocol and Gemini AI.">
+  <title>MCP Service Assistant | Find • Compare • Schedule</title>
+  <!-- Google Fonts: Inter and Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=15" />
+</head>
+<body>
+  <!-- View 1: Main Landing Page (Canva UI Design) -->
+  <section id="landing-view" class="landing-view">
+    <!-- Top Navigation Bar: Extended End-to-End Horizontally -->
+    <header class="landing-navbar">
+      <div class="landing-navbar-inner">
+        <div class="landing-nav-brand">
+          <span class="nav-brand-chip-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+              <line x1="9" y1="1" x2="9" y2="4"></line>
+              <line x1="15" y1="1" x2="15" y2="4"></line>
+              <line x1="9" y1="20" x2="9" y2="23"></line>
+              <line x1="15" y1="20" x2="15" y2="23"></line>
+              <line x1="20" y1="9" x2="23" y2="9"></line>
+              <line x1="20" y1="14" x2="23" y2="14"></line>
+              <line x1="1" y1="9" x2="4" y2="9"></line>
+              <line x1="1" y1="14" x2="4" y2="14"></line>
+            </svg>
+          </span>
+          <span class="nav-brand-title">ResolveMCP</span>
+        </div>
+        <div class="landing-nav-actions">
+          <button type="button" id="launch-assistant-btn" class="nav-btn-assistant" title="Open ResolveMCP Assistant">
+            Open Assistant ⚡
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="landing-wrapper">
+      <!-- Center Hero Section: Aligned in Proper Center Position -->
+      <main class="canva-hero-card">
+        <!-- 3D Hero Artwork -->
+        <div class="canva-artwork-frame">
+          <img
+            src="assets/canva_hero_art.png?v=3"
+            alt="ResolveMCP - Actionable AI Solution"
+            class="canva-artwork-img"
+          />
+        </div>
+
+        <!-- Bottom Controls Inside Canva Card -->
+        <div class="canva-bottom-controls">
+          <!-- Interactive Pill Search Box -->
+          <form id="hero-search-form" class="hero-search-form">
+            <div class="hero-search-pill">
+              <span class="hero-icon-lens" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </span>
+              <input
+                type="text"
+                id="hero-search-input"
+                class="hero-search-input"
+                placeholder="Describe your issue or repair needed (e.g. My AC is not cooling, who can fix it?)..."
+                autocomplete="off"
+                required
+              />
+              <button type="button" id="hero-mic-btn" class="hero-icon-mic" title="Voice or quick search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+              <button type="submit" class="hero-btn-submit" aria-label="Submit query">
+                ➔
+              </button>
+            </div>
+          </form>
+
+          <!-- Quick Suggestion Chips Inside Canva Image Card -->
+          <div class="hero-quick-chips">
+            <button type="button" class="hero-chip" data-query="My AC is running but it isn't cooling properly. Can someone come tomorrow?">❄️ AC not cooling</button>
+            <button type="button" class="hero-chip" data-query="My laptop is overheating and shutting down unexpectedly. Who can repair it?">💻 Laptop repair</button>
+            <button type="button" class="hero-chip" data-query="There is water leaking from my pipe in the bathroom.">🚰 Pipe leak</button>
+            <button type="button" class="hero-chip" data-query="My washing machine is not spinning and makes loud noise.">🧺 Washing machine repair</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- View 2: Assistant Workspace (Existing Chat, Providers, Schedule & Activity Feed) -->
+  <div id="assistant-view" class="app-container" style="display: none;">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <button id="nav-home-btn" class="btn-nav-home" title="Return to ResolveMCP Home">
+          ← Home
+        </button>
+        <div class="brand-logo-glow">
+          <span class="brand-icon">⚡</span>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">ResolveMCP</h1>
+          <p class="brand-subtitle">Actionable AI Service Resolution</p>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="status-pill" id="mcp-status" title="MCP Server status">
+          <span class="status-dot dot-active"></span>
+          <span class="status-label">MCP Server: Active</span>
+        </div>
+        <div class="status-pill" id="llm-status" title="LLM status">
+          <span class="status-dot dot-active"></span>
+          <span class="status-label">Gemini: Ready</span>
+        </div>
+        <div class="status-pill" id="db-status" title="Database status">
+          <span class="status-dot dot-active"></span>
+          <span class="status-label">SQLite: Connected</span>
+        </div>
+        <button id="refresh-chat-btn" class="icon-button btn-refresh-workspace" title="Start a fresh chat and refresh activity, bookings & catalog">
+          <span class="button-icon">🔄</span>
+          <span class="button-text">New Chat</span>
+        </button>
+        <button id="toggle-sidebar-btn" class="icon-button" title="Toggle MCP Activity Feed">
+          <span class="button-icon">📊</span>
+          <span class="button-text">Activity</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-layout">
+      <!-- Chat Section -->
+      <section class="chat-section" aria-label="Customer Chat">
+        <!-- Message History -->
+        <div class="chat-history" id="chat-history" role="log" aria-live="polite">
+          <!-- Initial Welcome Message -->
+          <div class="message-wrapper assistant-wrapper">
+            <div class="avatar assistant-avatar">🤖</div>
+            <div class="message-bubble assistant-bubble">
+              <div class="bubble-header">
+                <span class="sender-name">Service Assistant</span>
+                <span class="message-time">Just now</span>
+              </div>
+              <div class="bubble-content">
+                <p>Hello! I am your <strong>MCP Service Resolution Assistant</strong>. What service or repair do you need help with today?</p>
+                <p class="bubble-hint">I can diagnose issues, query verified local providers, compare ratings & pricing, check real-time slots, and schedule appointments.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Prompt Suggestion Chips -->
+        <div class="quick-prompts-bar" id="quick-prompts" aria-label="Quick Prompts">
+          <span class="prompts-label">Try asking:</span>
+          <button class="prompt-chip" data-prompt="My AC is running but it isn't cooling properly. Can someone come tomorrow?">
+            ❄️ AC not cooling
+          </button>
+          <button class="prompt-chip" data-prompt="My laptop is overheating and shutting down unexpectedly. Who can repair it?">
+            💻 Laptop overheating
+          </button>
+          <button class="prompt-chip" data-prompt="There is water leaking from my pipe in the bathroom. I need an urgent plumber.">
+            🚰 Water leaking from pipe
+          </button>
+          <button class="prompt-chip" data-prompt="My washing machine is not spinning and makes loud noise.">
+            🧺 Washing machine not spinning
+          </button>
+          <button class="prompt-chip" data-prompt="Can you search external web providers for AC Repair?">
+            🌐 Web Search (Tavily)
+          </button>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <form class="chat-input-form" id="chat-form">
+          <div class="input-container">
+            <textarea
+              id="user-input"
+              class="chat-textarea"
+              placeholder="Describe your issue or confirm a booking (e.g., 'My AC is not cooling, can someone come tomorrow?')..."
+              rows="1"
+              required
+            ></textarea>
+            <button type="submit" id="send-btn" class="send-button" aria-label="Send message">
+              <span class="send-icon">➤</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Sidebar: Live MCP Tool Activity & Protocol Inspector (STEP 23) -->
+      <aside class="activity-sidebar" id="activity-sidebar" aria-label="MCP Live Activity">
+        <!-- Sidebar Navigation Tabs -->
+        <div class="sidebar-tabs">
+          <button class="sidebar-tab active" id="tab-activity" data-tab="content-activity">
+            ⚡ MCP Activity <span class="badge" id="activity-count">0</span>
+          </button>
+          <button class="sidebar-tab" id="tab-appointments" data-tab="content-appointments">
+            📅 Bookings <span class="badge" id="appointments-count">0</span>
+          </button>
+          <button class="sidebar-tab" id="tab-catalog" data-tab="content-catalog">
+            📚 Catalog
+          </button>
+        </div>
+
+        <!-- Tab 1: Live Tool Activity Feed -->
+        <div class="tab-pane active" id="content-activity">
+          <div class="sidebar-header">
+            <h2 class="sidebar-title">Model Context Protocol Live Feed</h2>
+            <button class="clear-btn" id="clear-activity-btn" title="Clear activity log">Clear</button>
+          </div>
+          <p class="sidebar-desc">Live log of MCP tools executed between Gemini LLM ↔ MCP Server ↔ SQLite / Tavily.</p>
+
+          <div class="activity-feed" id="activity-feed">
+            <div class="empty-state" id="activity-empty">
+              <span class="empty-icon">🔌</span>
+              <p>No tool invocations yet. Send a message to watch MCP tool selection in real-time!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Booked Appointments View -->
+        <div class="tab-pane" id="content-appointments">
+          <div class="sidebar-header">
+            <h2 class="sidebar-title">Scheduled Appointments</h2>
+            <button class="refresh-btn" id="refresh-appointments-btn" title="Refresh bookings">↻</button>
+          </div>
+          <div class="appointments-list" id="appointments-list">
+            <div class="empty-state">
+              <span class="empty-icon">📅</span>
+              <p>No appointments booked yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: MCP Catalog (Resources & Tools) -->
+        <div class="tab-pane" id="content-catalog">
+          <div class="sidebar-header">
+            <h2 class="sidebar-title">MCP Tools & Resources</h2>
+          </div>
+          <div class="catalog-content">
+            <h3 class="catalog-section-title">Registered MCP Tools</h3>
+            <ul class="catalog-list">
+              <li><code>analyze_problem</code> <span>Keyword issue categorization</span></li>
+              <li><code>search_services</code> <span>SQLite provider search</span></li>
+              <li><code>get_provider_details</code> <span>Provider ratings & contact</span></li>
+              <li><code>check_availability</code> <span>Date slot conflict detector</span></li>
+              <li><code>schedule_appointment</code> <span>Booking commit to SQLite</span></li>
+              <li><code>cancel_appointment</code> <span>Appointment cancellation</span></li>
+              <li><code>search_external_providers</code> <span>Tavily web API search</span></li>
+            </ul>
+
+            <h3 class="catalog-section-title">Registered MCP Resources</h3>
+            <ul class="catalog-list">
+              <li><code>service://categories</code> <span>AC, Laptop, Plumbing, Washer</span></li>
+              <li><code>service://faqs</code> <span>Issue-to-service mappings</span></li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Provider Details Modal (STEP 22) -->
+  <div class="modal-overlay" id="provider-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h3 class="modal-title" id="modal-provider-name">Provider Details</h3>
+          <span class="modal-category" id="modal-provider-category"></span>
+        </div>
+        <button class="modal-close" id="modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-provider-body">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-card btn-card-secondary" id="modal-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Booking Details Modal (Feature Requirement #3) -->
+  <div class="modal-overlay" id="customer-booking-modal" aria-hidden="true">
+    <div class="modal-dialog booking-modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h3 class="modal-title" id="booking-modal-title">Confirm Service Appointment</h3>
+          <span class="modal-category" id="booking-modal-subtitle">Fast Confirmation</span>
+        </div>
+        <button class="modal-close" id="booking-modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="customer-booking-form" class="modal-body booking-form-body">
+        <div class="booking-summary-banner">
+          <div class="summary-col">
+            <span class="summary-label">Service Provider</span>
+            <strong class="summary-value" id="modal-summary-provider">Provider Name</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-label">Chosen Slot Status</span>
+            <span class="summary-value slot-pill" id="modal-summary-slot">10:00 AM (Tomorrow)</span>
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top: -4px;">
+          <div class="form-group col-half">
+            <label for="modal-date-input" class="form-label">Appointment Date <span class="required">*</span></label>
+            <input type="date" id="modal-date-input" class="form-control" style="font-weight: 600;" required />
+          </div>
+          <div class="form-group col-half">
+            <label for="modal-slot-select" class="form-label">Time Slot <span class="required">*</span></label>
+            <div class="slot-select-container">
+              <select id="modal-slot-select" class="form-control time-slot-select" style="font-weight: 700;"></select>
+            </div>
+          </div>
+        </div>
+        <span class="slot-hint" id="modal-slot-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: -4px; margin-bottom: 12px; display: block;">Select a date and time slot above. Booked slots appear faded and cannot be selected.</span>
+
+        <div class="form-group">
+          <label for="cust-name-input" class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="cust-name-input" class="form-control" placeholder="e.g. John Fernandes" required autocomplete="name" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="cust-phone-input" class="form-label">Phone Number <span class="required">*</span></label>
+            <input type="tel" id="cust-phone-input" class="form-control" placeholder="e.g. +91 98221 23456" required autocomplete="tel" />
+          </div>
+          <div class="form-group col-half">
+            <label for="cust-email-input" class="form-label">Email Address (Optional)</label>
+            <input type="email" id="cust-email-input" class="form-control" placeholder="e.g. john@example.com" autocomplete="email" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cust-address-input" class="form-label">Service Address / City</label>
+          <input type="text" id="cust-address-input" class="form-control" placeholder="e.g. 123 Main Street, City" value="" />
+        </div>
+
+        <div class="form-group">
+          <label for="cust-problem-input" class="form-label">Problem / Service Notes</label>
+          <textarea id="cust-problem-input" class="form-control form-textarea" rows="2" placeholder="e.g. AC is running but not cooling"></textarea>
+        </div>
+
+        <div id="booking-modal-error" class="modal-error-banner" style="display: none;" role="alert"></div>
+
+        <div class="modal-footer booking-modal-footer">
+          <button type="button" class="btn-card btn-card-secondary" id="booking-modal-cancel-btn">Cancel</button>
+          <button type="submit" class="btn-card btn-card-primary" id="booking-modal-submit-btn">✓ Confirm & Book Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cancellation Reason Modal -->
+  <div class="modal-overlay" id="cancellation-modal" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <h3 class="modal-title" id="cancel-modal-title">Cancel Appointment</h3>
+          <span class="modal-category" id="cancel-modal-appt-ref">#APPT-</span>
+        </div>
+        <button class="modal-close" id="cancel-modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="cancel-appointment-form" class="modal-body" style="padding-top: 14px;">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
+          Please let us know why you are cancelling this appointment. Your feedback helps us improve our service providers.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Select a Reason</label>
+          <div class="reason-chips" id="cancel-reason-chips">
+            <button type="button" class="reason-chip" data-reason="Issue resolved myself">Fixed myself</button>
+            <button type="button" class="reason-chip" data-reason="Found another provider">Found another provider</button>
+            <button type="button" class="reason-chip" data-reason="Schedule conflict / change of plans">Schedule conflict</button>
+            <button type="button" class="reason-chip" data-reason="Price higher than expected">Price too high</button>
+            <button type="button" class="reason-chip" data-reason="Booking made by mistake">Booked by mistake</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cancel-reason-input" class="form-label">Custom Reason / Notes (Optional)</label>
+          <textarea id="cancel-reason-input" class="form-control form-textarea" rows="2" placeholder="Tell us more about why you're cancelling..."></textarea>
+        </div>
+
+        <div id="cancel-modal-error" class="modal-error-banner" style="display: none;" role="alert"></div>
+
+        <div class="modal-footer" style="padding-top: 14px; margin-top: 8px;">
+          <button type="button" class="btn-card btn-card-secondary" id="cancel-modal-back-btn">Keep Appointment</button>
+          <button type="submit" class="btn-card btn-card-danger" id="cancel-modal-confirm-btn">✕ Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js?v=15"></script>
+</body>
+</html>
