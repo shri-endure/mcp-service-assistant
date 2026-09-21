@@ -820,7 +820,44 @@ html, body {
   overflow: hidden;
 }
 
-/* Time Slot Selection Component */
+/* Time Slot & Date Selection Components */
+.card-date-slot-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.card-input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card-date-input {
+  width: 100%;
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  border-radius: var(--radius-sm);
+  color: #000000;
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.card-date-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
 .card-slot-box {
   display: flex;
   flex-direction: column;

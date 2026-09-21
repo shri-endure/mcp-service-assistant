@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import sys
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
@@ -101,20 +102,24 @@ You interact with the system strictly through Model Context Protocol (MCP) Clien
      - Provide the official customer care number returned by the tool.
      ### ❓ Local Service
      - Ask: "Would you like us to provide local service? If you’d like a technician to come and look at your [Appliance Model], just let me know and we’ll find the best local repair provider for you."
-#### STAGE 3: Local Service Offer Confirmation (User says Yes):
-- If the user agrees to local service:
-  1. Call `search_services(category)` to retrieve verified local providers.
-  2. Call `get_provider_details` for top candidate providers.
-  3. Format your response with:
-     ### 📅 Local Service Technicians:
-     - Present the candidate technicians in a clear, well-formatted Markdown table:
-       | Provider | Rating | Price Range | Contact | Services & Specialization |
-       |:---|:---|:---|:---|:---|
-       | [Provider Name] | ★ [Rating] | [Price Range] | [Phone] | [Services / Specialization] |
-     - Prompt them to choose their preferred provider and time slot to book.
+#### STAGE 3: Local Service & Location Confirmation:
+- When the user agrees to local service (e.g., 'Yes', 'Yes please', 'Find a technician', 'Sure'):
+  1. If the user has NOT provided their place/location or city yet:
+     - STRICT RULE: DO NOT CALL ANY TOOLS AT ALL! Do NOT call `search_external_providers`, do NOT call `search_services`, do NOT call `get_provider_details`. Calling any provider search tool before the user states their location is strictly forbidden.
+     - Respond with ONLY the question asking for their location: "Sure! Which city, area, or locality are you located in? (e.g., Panjim, Bandra Mumbai, Indiranagar Bangalore, Connaught Place Delhi, etc.)"
+     - Wait for the user's location response.
+  2. Once the user provides their place/location (or if they already included their location like 'Yes, in Bandra'):
+     - Call `search_external_providers(service="[Category]", location="[Location]")` to search real local providers via Tavily and save them to the database.
+     - Format your response with:
+       ### 📅 Local Service Technicians in [Location]:
+       - Present the candidate technicians in a clear, well-formatted Markdown table:
+         | Provider | Rating | Price Range | Contact | Services & Specialization |
+         |:---|:---|:---|:---|:---|
+         | [Provider Name] | ★ [Rating] | [Price Range] | [Phone] | [Services / Specialization] |
+       - Prompt them to choose a date and time slot from the cards to book their appointment.
 
 #### STAGE 4: Booking & Confirmation:
-- When the user confirms a provider and time slot:
+- When the user confirms a provider, date, and time slot:
   - Call `schedule_appointment` and generate the Official Confirmation Receipt.
 
 ### 🧾 APPOINTMENT CONFIRMATION RECEIPT PROTOCOL:
@@ -149,6 +154,20 @@ _current_turn_providers: List[Dict[str, Any]] = []
 _current_turn_receipt: Optional[Dict[str, Any]] = None
 
 
+
+def is_asking_for_location(text: str) -> bool:
+    """Check if assistant's message is asking the user for their location/city/area."""
+    if not text:
+        return False
+    pattern = (
+        r"(?:which city|what city|area, or locality|where are you located|"
+        r"location are you|which area|city or locality|provide your location|"
+        r"let me know which city|tell me your city|your area|your locality|"
+        r"what area|city are you|area are you|locality are you)"
+    )
+    return bool(re.search(pattern, text, re.IGNORECASE))
+
+
 def record_activity(tool_name: str, summary: str) -> None:
     """Record a tool activity for live MCP visualization (STEP 23)."""
     _current_turn_activities.append({
@@ -156,6 +175,7 @@ def record_activity(tool_name: str, summary: str) -> None:
         "summary": summary,
         "status": "completed",
     })
+
 
 
 # ----------------------------------------------------------------------------
@@ -252,22 +272,32 @@ def tool_schedule_appointment(
     return res
 
 
-def tool_search_external_providers(service: str, location: str = "Goa") -> List[Dict[str, Any]]:
+def tool_search_external_providers(service: str, location: str = "") -> List[Dict[str, Any]]:
     """Search the web for external service providers via Tavily API on MCP Server via MCP Client."""
+    global _current_turn_providers
+    loc_clean = (location or "").strip().lower()
+    if not loc_clean or loc_clean in ["local area", "local", "none", "unknown", "n/a", "any", "your area", "city"]:
+        # User has not provided a specific real-world location yet; do not search or show dummy provider cards
+        return []
+
     res = mcp_client.execute_tool_sync(
         "search_external_providers",
         {"service": str(service), "location": str(location)},
     )
     if isinstance(res, list):
+        valid_providers = [p for p in res if isinstance(p, dict) and "name" in p and "id" in p]
+        if valid_providers:
+            _current_turn_providers = valid_providers
         record_activity(
             "search_external_providers",
-            f"Found: {len(res)} external web listings via Tavily for '{service}' in {location}",
+            f"Found: {len(res)} live verified providers via Tavily for '{service}' in {location}",
         )
         return res
     elif isinstance(res, dict):
         record_activity("search_external_providers", f"Notice: {res.get('message', 'Search finished')}")
         return [res]
     return []
+
 
 
 def tool_cancel_appointment(appointment_id: int, reason: str = "Customer request") -> Dict[str, Any]:
@@ -755,11 +785,13 @@ class ServiceAssistantAgent:
                 reply_text = await self._chat_with_groq(message, conv_id)
             except Exception as e:
                 reply_text = f"An error occurred with Groq service assistant: {str(e)}"
+
+            turn_providers = [] if is_asking_for_location(reply_text) else list(_current_turn_providers)
             return {
                 "response": reply_text,
                 "conversation_id": conv_id,
                 "tool_activities": list(_current_turn_activities),
-                "providers": list(_current_turn_providers),
+                "providers": turn_providers,
                 "receipt": _current_turn_receipt,
                 "backend": "groq",
                 "model": self.groq_model_name,
@@ -806,11 +838,14 @@ class ServiceAssistantAgent:
                         f"Both primary and secondary AI assistants encountered an error: {str(groq_err)}. Please try sending your message again."
                     )
 
+        # If reply text asks for location, suppress any provider cards
+        turn_providers = [] if is_asking_for_location(reply_text) else list(_current_turn_providers)
+
         return {
             "response": reply_text,
             "conversation_id": conv_id,
             "tool_activities": list(_current_turn_activities),
-            "providers": list(_current_turn_providers),
+            "providers": turn_providers,
             "receipt": _current_turn_receipt,
             "backend": self.active_backend,
             "model": self.groq_model_name if self.active_backend == "groq" else self.gemini_model_name,

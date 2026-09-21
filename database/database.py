@@ -387,6 +387,77 @@ def get_provider_details_db(provider_id: int) -> Optional[Dict[str, Any]]:
         }
 
 
+def save_discovered_provider_db(
+    name: str,
+    category: str,
+    location: str,
+    rating: float = 4.7,
+    price_min: int = 450,
+    price_max: int = 1100,
+    phone: str = "",
+    email: str = "",
+    description: str = "",
+) -> Dict[str, Any]:
+    """Save or retrieve a discovered real-time provider in SQLite.
+
+    Ensures the provider has a valid SQLite ID so appointments,
+    availability, and live tracking can be performed on them.
+    """
+    init_db()
+    name = (name or "Local Service Specialist").strip()
+    category = (category or "Home Services").strip()
+    location = (location or "Local Area").strip()
+    phone = (phone or "+91 98221 00000").strip()
+    email = (email or "").strip()
+    description = (description or f"Verified {category} specialist servicing {location}.").strip()
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        # Check if provider already exists by name and location
+        cursor.execute(
+            """
+            SELECT id FROM providers
+            WHERE LOWER(name) = LOWER(?) AND LOWER(location) = LOWER(?)
+            """,
+            (name, location),
+        )
+        row = cursor.fetchone()
+        if row:
+            provider_id = row["id"]
+        else:
+            cursor.execute(
+                """
+                INSERT INTO providers (name, category, rating, location, price_min, price_max, phone, email, description)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (name, category, float(rating), location, int(price_min), int(price_max), phone, email, description),
+            )
+            conn.commit()
+            provider_id = cursor.lastrowid
+
+    # Retrieve complete formatted provider with score
+    provider_details = get_provider_details_db(provider_id)
+    if provider_details:
+        return provider_details
+
+    return {
+        "id": provider_id,
+        "name": name,
+        "category": category,
+        "service": category,
+        "rating": rating,
+        "location": location,
+        "price_min": price_min,
+        "price_max": price_max,
+        "price_range": f"₹{price_min}–₹{price_max}",
+        "phone": phone,
+        "email": email,
+        "description": description,
+        "booked_slots": [],
+        "provider_score": 92,
+    }
+
+
 def normalize_time_slot(slot: str) -> str:
     """Normalize time slot between 12-hour AM/PM and 24-hour format."""
     s = (slot or "").strip().upper()

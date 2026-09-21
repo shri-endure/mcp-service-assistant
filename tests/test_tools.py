@@ -19,6 +19,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from database.database import get_connection, init_db
 from server.tools import (
     analyze_problem,
@@ -214,6 +217,35 @@ def test_verify_part_pricing():
     assert res_high["verdict_badge"] == "danger"
 
 
+def test_search_external_providers_real_location_and_db_persistence():
+    """Verify that search_external_providers creates valid SQLite providers with IDs and supports booking."""
+    from server.tools import search_external_providers, get_provider_details, schedule_appointment, cancel_appointment
+    res = search_external_providers("AC Repair", "Bandra, Mumbai")
+    assert isinstance(res, list)
+    assert len(res) > 0
+    p = res[0]
+    assert "id" in p
+    assert p["id"] > 0
+    assert "Bandra" in p["location"] or "Mumbai" in p["location"]
+
+    # Verify get_provider_details retrieves this discovered provider from SQLite
+    details = get_provider_details(p["id"])
+    assert details is not None
+    assert details["name"] == p["name"]
+
+    # Test booking with this discovered provider
+    book_res = schedule_appointment(
+        provider_id=p["id"],
+        date="2028-05-12",
+        time="02:00 PM",
+        customer_name="Discovered Tech Customer",
+        service_id=1,
+        problem="Cooling gas refill"
+    )
+    assert book_res.get("success") is True
+    cancel_appointment(book_res["appointment_id"])
+
+
 if __name__ == "__main__":
     init_db()
     print("Running tests in tests/test_tools.py...")
@@ -237,9 +269,12 @@ if __name__ == "__main__":
     print("[PASS] STEP 26: Invalid appointment (slot taken)")
     test_error_external_api_failure()
     print("[PASS] STEP 26: External API failure")
+    test_search_external_providers_real_location_and_db_persistence()
+    print("[PASS] Tavily + SQLite: Real-time provider discovery and booking")
     test_lookup_appliance_error_code()
     print("[PASS] Tavily AI: lookup_appliance_error_code (Manufacturer Manuals)")
     test_verify_part_pricing()
     print("[PASS] Tavily AI: verify_part_pricing (Anti-Fraud & Fair Market Rates)")
     print("\nALL tests in tests/test_tools.py passed successfully!")
+
 

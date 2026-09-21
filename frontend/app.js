@@ -421,11 +421,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper assistant-wrapper';
 
+    // Safeguard: Never render provider cards if the message is asking for user's location/city
+    const isAskingLocation = /(?:which city|what city|area, or locality|where are you located|location are you|which area|city or locality|provide your location|let me know which city|tell me your city|your area|your locality|what area|city are you|area are you|locality are you)/i.test(text);
+    if (isAskingLocation) {
+      providers = [];
+    }
+
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const formattedHtml = formatMarkdown(text);
 
     let providersHtml = '';
     if (providers && providers.length > 0) {
+      const todayObj = new Date();
+      const tomorrowObj = new Date(todayObj);
+      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+      const todayIso = todayObj.toISOString().split('T')[0];
+      const tomorrowIso = tomorrowObj.toISOString().split('T')[0];
+
       providersHtml = `
         <div class="providers-grid">
           ${providers.map((p) => {
@@ -445,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="provider-details-grid">
                 <div class="detail-item">
                   <span class="detail-label">Location:</span>
-                  <span class="detail-value">📍 ${escapeHtml(p.location || 'Goa')}</span>
+                  <span class="detail-value">📍 ${escapeHtml(p.location || 'Local Area')}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Price Range:</span>
@@ -467,14 +479,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="provider-card-desc" title="${escapeHtml(p.description)}">${escapeHtml(p.description)}</p>
               ` : ''}
 
-              <!-- Time Slot Selectbox -->
-              <div class="card-slot-box">
-                <label class="slot-select-label" for="slot-select-${p.id}">Select Time Slot:</label>
-                <div class="slot-select-container">
-                  <select id="slot-select-${p.id}" class="time-slot-select" onchange="window.onSlotSelectChange(${p.id}, '${escapeHtml(p.name)}', this.value)">
-                    <option value="">-- Choose Time Slot --</option>
-                    ${buildSlotOptionsHtml(p.id, p.booked_slots)}
-                  </select>
+              <!-- Calendar Date & Time Slot Selection (Requirement #1) -->
+              <div class="card-date-slot-group">
+                <div class="card-input-block">
+                  <label class="slot-select-label" for="date-select-${p.id}">📅 Service Date:</label>
+                  <input type="date" id="date-select-${p.id}" class="card-date-input" min="${todayIso}" value="${tomorrowIso}" onchange="window.onCardDateChange(${p.id}, this.value)" />
+                </div>
+                <div class="card-input-block">
+                  <label class="slot-select-label" for="slot-select-${p.id}">⏰ Time Slot:</label>
+                  <div class="slot-select-container">
+                    <select id="slot-select-${p.id}" class="time-slot-select" onchange="window.onSlotSelectChange(${p.id}, '${escapeHtml(p.name)}', this.value)">
+                      <option value="">-- Choose Time Slot --</option>
+                      ${buildSlotOptionsHtml(p.id, p.booked_slots)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -2005,7 +2023,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.triggerFollowUpChoice = function(choice) {
     if (isTaskRunning) return;
     if (choice) {
-      userInput.value = 'Yes, please find verified nearby service technicians for this issue.';
+      userInput.value = 'Yes, please find local service technicians for this issue.';
     } else {
       userInput.value = 'Thank you, I will try the manual checks first.';
     }
@@ -2015,6 +2033,58 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start customer WS on load
   initCustomerWebSocket();
 
+  const cardDatesByProvider = {};
+
+  window.onCardDateChange = async function(providerId, newDate) {
+    if (!newDate) return;
+    const pid = String(providerId);
+    cardDatesByProvider[pid] = newDate;
+
+    try {
+      const res = await fetch(`${API_BASE}/booked-slots?date=${encodeURIComponent(newDate)}&_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.booked_slots) {
+          const slotsForThis = data.booked_slots[pid] || [];
+          if (!bookedSlotsByProvider[pid]) bookedSlotsByProvider[pid] = new Set();
+          bookedSlotsByProvider[pid] = new Set(slotsForThis.map(s => normalizeSlot(s)));
+
+          // Refresh the specific select element for this provider card
+          const sel = document.getElementById(`slot-select-${pid}`);
+          if (sel) {
+            const currentVal = sel.value;
+            const options = sel.querySelectorAll('option');
+            options.forEach(opt => {
+              if (!opt.value) return;
+              const booked = isSlotBooked(pid, opt.value);
+              const def = STANDARD_SLOTS_DEF.find(d => normalizeSlot(d.value) === normalizeSlot(opt.value));
+              const baseLabel = def ? def.label : opt.value;
+              if (booked) {
+                opt.disabled = true;
+                opt.className = 'slot-booked';
+                opt.textContent = `${opt.value} (Booked • Unavailable)`;
+                opt.style.color = '#94a3b8';
+                opt.style.fontStyle = 'italic';
+                opt.style.backgroundColor = '#f8fafc';
+                if (currentVal && normalizeSlot(currentVal) === normalizeSlot(opt.value)) {
+                  sel.value = '';
+                }
+              } else {
+                opt.disabled = false;
+                opt.className = '';
+                opt.textContent = baseLabel;
+                opt.style.color = '#0f172a';
+                opt.style.fontStyle = 'normal';
+                opt.style.backgroundColor = '#ffffff';
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to update slots for provider date:', e);
+    }
+  };
 
   window.onSlotSelectChange = function(providerId, providerName, slotValue) {
     if (!slotValue) return;
@@ -2031,23 +2101,27 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Please wait for the current assistant task to complete before booking.');
       return;
     }
+    const pid = String(providerId);
     const selectEl = document.getElementById(`slot-select-${providerId}`);
+    const dateEl = document.getElementById(`date-select-${providerId}`);
     const selectedSlot = selectEl ? selectEl.value : '';
+    const selectedDate = (dateEl && dateEl.value) ? dateEl.value : (cardDatesByProvider[pid] || '');
+
     if (!selectedSlot) {
       alert(`Please choose an available time slot from the dropdown for ${providerName} first!`);
       if (selectEl) selectEl.focus();
       return;
     }
     if (isSlotBooked(providerId, selectedSlot)) {
-      alert(`⚠️ The ${selectedSlot} slot for ${providerName} is already booked by another customer! Please select an available time slot.`);
+      alert(`⚠️ The ${selectedSlot} slot for ${providerName} is already booked for ${selectedDate || 'the selected date'}! Please select an available time slot.`);
       if (selectEl) {
         selectEl.value = '';
         selectEl.focus();
       }
       return;
     }
-    // Open the Customer Details modal popup (Feature Requirement #3)
-    window.openBookingModal(providerId, providerName, selectedSlot);
+    // Open the Customer Details modal popup with chosen slot and date
+    window.openBookingModal(providerId, providerName, selectedSlot, '', selectedDate);
   };
 
   window.checkSlotsFor = function(providerName) {
