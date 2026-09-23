@@ -5,6 +5,11 @@ An intelligent, production-ready AI service assistant built with the **Model Con
 ---
 
 ## Project Structure
+MCP SERVICE AI ASSISTANT:
+The MCP Service Resolution Assistant is an intelligent, end-to-end customer support and booking platform for home appliances and computer repairs.
+Instead of functioning as a simple text chatbot, it acts as an Actionable AI Agent: it analyzes user problems, looks up official manufacturer repair manuals, provides authorized customer care numbers, searches the web for real-time local technicians in the user's specific city/locality, and books appointments directly into a database with conflict-free calendar time slots.
+The project implements the Model Context Protocol (MCP) architecture created by Anthropic, combined with a dual-LLM fallback mechanism and real-time web search.
+
 
 ```
 mcp-service-assistant/
@@ -106,6 +111,7 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+
 ```
 
 ### 2. Configure Environment Variables
